@@ -28,6 +28,8 @@ __all__ = [
 def isUnderline(expr):
     return bool(re.match("[=]+$", expr) or re.match("[-]+$", expr))
 
+
+
 def startslist(x):
     return (x == '-' or (x.endswith(".") and (x[:-1].isdigit()
                                               or x[:-1] == '#')))
@@ -38,8 +40,10 @@ def isAcronym(word):
     """
     Is the given word an acronym (separated by periods, so it doesn't end a
     sentence)?  cf. lots of interesting acronyms, e.g. this is one.  solve for
-    x.  a.b.c. is also one.
+    x.  a.b.c. is also one.  You might also want to give an example
+    parenthetically (e.g. this one).
     """
+    word = word.strip("(")
     return ((len(word) > 2 and word[1::2] == '.' * (len(word) / 2)) or
             word in ["cf.", "viz."])
 
