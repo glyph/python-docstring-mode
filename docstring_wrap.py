@@ -3,7 +3,7 @@
 
 """
 General Python docstring wrapper
-==============================================
+================================
 
 Utility for wrapping docstrings in Python; specifically, docstrings in
 U{Epytext <http://epydoc.sourceforge.net/manual-epytext.html>} or Sphinx
@@ -179,14 +179,14 @@ class RegularParagraph(object):
 
 
     def wrap(self, output, indentation, width, initialBlank):
-        thisLineWidth = width
+        maxWidthThisLine = width
         if not self.words:
             return
         if initialBlank:
             thisLine = self.firstIndent(indentation)
         else:
             thisLine = ''
-            thisLineWidth -= (3 + len(indentation))
+            maxWidthThisLine -= (3 + len(indentation))
         first = True
         prevWord = ''
         for num, word in enumerate(self.words):
@@ -201,8 +201,10 @@ class RegularParagraph(object):
             else:
                 spaces = 1
             prevWord = word
-            if ( self.pointTracker.lengthOf(thisLine) +
-                 self.pointTracker.lengthOf(word) + spaces <= thisLineWidth ):
+            thisLineWidthWithThisWord = (self.pointTracker.lengthOf(thisLine) +
+                                         self.pointTracker.lengthOf(word) +
+                                         spaces)
+            if thisLineWidthWithThisWord <= maxWidthThisLine or first:
                 if first:
                     first = not first
                 else:
@@ -211,7 +213,7 @@ class RegularParagraph(object):
             else:
                 output.write(self.pointTracker.scan(thisLine, output.tell()))
                 output.write("\n")
-                thisLineWidth = width
+                maxWidthThisLine = width
                 thisLine = self.restIndent(indentation) + word
         output.write(self.pointTracker.scan(thisLine, output.tell()))
         output.write("\n")
@@ -519,22 +521,38 @@ def sampleDocstring():
 
 if __name__ == '__main__':
     import sys
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--offset")
+    parser.add_argument("--indent")
+    parser.add_argument("--width")
+    namespace = parser.parse_args(sys.argv[1:])
+
     from cStringIO import StringIO
+
     io = StringIO()
     indata = sys.stdin.read()
     inlines = indata.split("\n")
     initialBlank, indentCount = indentHeuristic(inlines, io)
     point = 0
-    if len(sys.argv) > 1 and sys.argv[1] == 'offset':
-        doOffset = True
-        point = int(sys.argv[2])
+    width = 79
+
+    if namespace.offset is not None:
+        point = int(namespace.offset)
+    if namespace.indent is not None:
+        indentCount = int(namespace.indent)
+    if namespace.width is not None:
+        width = int(namespace.width)
+
     offset = wrapPythonDocstring(
         indata, io,
         indentation=" " * indentCount,
+        width=width,
         point=point,
         initialBlank=initialBlank,
     )
-    if doOffset:
+    if namespace.offset is not None:
         sys.stdout.write(repr(offset))
         sys.stdout.write(" ")
 

@@ -19,6 +19,11 @@
                                       (throw 'not-a-string nil))))
                        (string-start (+ (goto-char (nth 8 syx))
                                         3))
+                       ;; at the beginning of the screen here
+                       (indent-count (- (- string-start 3)
+                                        (save-excursion
+                                          (beginning-of-line)
+                                          (point))))
                        (string-end
                         (- (condition-case ()        ; for unbalanced quotes
                                (progn (forward-sexp)
@@ -32,14 +37,17 @@
                           (shell-command-on-region
                            string-start string-end
                            (format
-                            "python %s offset %s"
+                            "python %s --offset %s --indent %s --width %s"
                             python-docstring-script
-                            orig-offset)
+                            orig-offset
+                            indent-count
+                            fill-column
+                            )
                            :replace t)
                           (goto-char string-start)
                           (forward-sexp)
                           (string-to-number
-                           (buffer-substring-no-properties string-start (point)))
+                           (buffer-substring-no-properties string-start orig-point))
                           )))
                     (delete-region string-start (+ 1 (point)))
                     offset-within)))))
