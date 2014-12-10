@@ -19,8 +19,11 @@
                                       (throw 'not-a-string nil))))
                        (string-start (+ (goto-char (nth 8 syx))
                                         3))
+                       (rawchar (if (eql (char-before (point)) ?r)
+                                    1
+                                  0))
                        ;; at the beginning of the screen here
-                       (indent-count (- (- string-start 3)
+                       (indent-count (- (- string-start (+ rawchar 3))
                                         (save-excursion
                                           (beginning-of-line)
                                           (point))))
