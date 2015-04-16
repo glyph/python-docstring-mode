@@ -295,6 +295,13 @@ class FieldParagraph(RegularParagraph):
                 elif ( set([myWords[0], theirWords[0]]) ==
                        set([":return:", ":rtype:"]) ):
                     return True
+                elif ( set([myWords[0], theirWords[0]]) ==
+                       set([":param", ":type"]) and
+                       len(myWords) > 1 and len(theirWords) > 1 and
+                       myWords[1] == theirWords[1]):
+                    # same as "matching @param and @type" below, but stricter;
+                    # FIXME: these should be merged.
+                    return True
                 else:
                     return False
             elif len(myWords) > 1 and len(theirWords) > 1:
