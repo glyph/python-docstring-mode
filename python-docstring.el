@@ -157,8 +157,8 @@ Null prefix argument turns off the mode."
    (font-lock-remove-keywords nil docstring-keywords)))
 
 (defun python-docstring-install ()
-  (add-hook 'python-mode-hook (lambda () (python-docstring-mode t)))
-  )
+  "Add python-docstring-mode as a hook to python.mode."
+  (add-hook 'python-mode-hook (lambda () (python-docstring-mode t))))
 
 (provide 'python-docstring)
 
