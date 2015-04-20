@@ -34,7 +34,7 @@
 (defvar python-docstring-script
   (concat (file-name-as-directory (file-name-directory #$))
           "docstring_wrap.py")
-  "The location of the ")
+  "The location of the docstring_wrap.py script.")
 
 (defun python-docstring-fill ()
   "Wrap Python docstrings as epytext or ReStructured Text."
