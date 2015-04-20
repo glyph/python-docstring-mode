@@ -136,9 +136,7 @@
     ;; C/I/B - 0
     (,docstring-epytext-markup-style-italic 0 font-lock-constant-face t)
     ;; inline markup - 1
-    (,docstring-epytext-markup-style-italic 1 (quote italic) t)
-    )
-  )
+    (,docstring-epytext-markup-style-italic 1 (quote italic) t)))
 
 (define-minor-mode python-docstring-mode
   "Toggle python-docstring-mode.
