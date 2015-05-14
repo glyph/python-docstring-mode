@@ -1,4 +1,4 @@
-;;; python-docstring-mode.el --- Smart Python docstring formatting
+;;; python-docstring.el --- Smart Python docstring formatting
 
 ;; Copyright (c) 2014-2015 The Authors
 ;;
