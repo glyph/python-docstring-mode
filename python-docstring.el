@@ -90,22 +90,22 @@
     (if fill-it-anyway
         (call-interactively 'fill-paragraph))))
 
-(defvar docstring-field-with-arg-re
+(defvar python-docstring-field-with-arg-re
   "^\\s-*[@:]\\(param\\|parameter\\|arg\\|argument\\|type\\|keyword\\|kwarg\\|kwparam\\|raise\\|raises\\|except\\|exception\\|ivar\\|ivariable\\|cvar\\|cvariable\\|var\\|variable\\|type\\|group\\|todo\\|newfield\\)\\s-+\\([a-zA-Z_][a-zA-Z0-9_. ]*?\\):")
 
-(defvar docstring-field-no-arg-re
+(defvar python-docstring-field-no-arg-re
   "^\\s-*[@:]\\(raise\\|raises\\|return\\|returns\\|rtype\\|returntype\\|type\\|sort\\|see\\|seealso\\|note\\|attention\\|bug\\|warning\\|warn\\|version\\|todo\\|deprecated\\|since\\|status\\|change\\|changed\\|permission\\|requires\\|require\\|requirement\\|precondition\\|precond\\|postcondition\\|postcod\\|invariant\\|author\\|organization\\|org\\|copyright\\|(c)\\|license\\|contact\\|summary\\|params\\|param\\):")
 
-(defvar docstring-epytext-markup-link "[UL]{\\([^}]*?\\)\\(<.*?>\\|\\)?}")
-(defvar docstring-epytext-markup-style-code "C{\\(.*?\\)}")
-(defvar docstring-epytext-markup-style-italic "I{\\(.*?\\)}")
-(defvar docstring-epytext-markup-style-bold "B{\\(.*?\\)}")
+(defvar python-docstring-epytext-markup-link "[UL]{\\([^}]*?\\)\\(<.*?>\\|\\)?}")
+(defvar python-docstring-epytext-markup-style-code "C{\\(.*?\\)}")
+(defvar python-docstring-epytext-markup-style-italic "I{\\(.*?\\)}")
+(defvar python-docstring-epytext-markup-style-bold "B{\\(.*?\\)}")
 
 ;; hack for sphinx
-(defvar docstring-sphinx-markup-link "\\(:[^:]+?:\\)\\(`.+?`\\)")
-(defvar docstring-sphinx-markup-code "``\\(.+?\\)``")
+(defvar python-docstring-sphinx-markup-link "\\(:[^:]+?:\\)\\(`.+?`\\)")
+(defvar python-docstring-sphinx-markup-code "``\\(.+?\\)``")
 
-(defvar docstring-keywords
+(defvar python-docstring-keywords
   `((,docstring-field-with-arg-re 1 font-lock-type-face t)
     (,docstring-field-with-arg-re 2 font-lock-function-name-face t)
     (,docstring-field-no-arg-re 1 font-lock-type-face t)
@@ -151,8 +151,8 @@ Null prefix argument turns off the mode."
  `(([(meta q)] . python-docstring-fill))
  ;; &rest BODY
  (if python-docstring-mode
-     (font-lock-add-keywords nil docstring-keywords)
-   (font-lock-remove-keywords nil docstring-keywords)))
+     (font-lock-add-keywords nil python-docstring-keywords)
+   (font-lock-remove-keywords nil python-docstring-keywords)))
 
 (defun python-docstring-install ()
   "Add python-docstring-mode as a hook to python.mode."
