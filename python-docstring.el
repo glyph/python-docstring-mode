@@ -32,7 +32,9 @@
 ;;; Code:
 
 (defvar python-docstring-script
-  (concat (file-name-as-directory (file-name-directory #$))
+  (concat (if load-file-name
+              (file-name-directory load-file-name)
+            default-directory)
           "docstring_wrap.py")
   "The location of the docstring_wrap.py script.")
 
