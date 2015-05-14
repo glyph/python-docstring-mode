@@ -73,7 +73,7 @@
                            string-start string-end
                            (format
                             "python %s --offset %s --indent %s --width %s"
-                            python-docstring-script
+                            (shell-quote-argument python-docstring-script)
                             orig-offset
                             indent-count
                             fill-column
