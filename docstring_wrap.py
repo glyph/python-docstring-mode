@@ -536,10 +536,10 @@ if __name__ == '__main__':
     parser.add_argument("--width")
     namespace = parser.parse_args(sys.argv[1:])
 
-    from cStringIO import StringIO
+    from io import StringIO
 
     io = StringIO()
-    indata = sys.stdin.read()
+    indata = sys.stdin.read().decode("utf-8")
     inlines = indata.split("\n")
     initialBlank, indentCount = indentHeuristic(inlines, io)
     point = 0
@@ -563,5 +563,6 @@ if __name__ == '__main__':
         sys.stdout.write(repr(offset))
         sys.stdout.write(" ")
 
-    sys.stdout.write(io.getvalue())
+    output = io.getvalue()
+    sys.stdout.write(output.encode("utf-8"))
     sys.stdout.flush()
