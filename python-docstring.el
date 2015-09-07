@@ -91,10 +91,10 @@
         (call-interactively 'fill-paragraph))))
 
 (defvar python-docstring-field-with-arg-re
-  "^\\s-*[@:]\\(param\\|parameter\\|arg\\|argument\\|type\\|keyword\\|kwarg\\|kwparam\\|raise\\|raises\\|except\\|exception\\|ivar\\|ivariable\\|cvar\\|cvariable\\|var\\|variable\\|type\\|group\\|todo\\|newfield\\)\\s-+\\([a-zA-Z_][a-zA-Z0-9_. ]*?\\):")
+  "^\\s-*\\([@:]\\)\\(param\\|parameter\\|arg\\|argument\\|type\\|keyword\\|kwarg\\|kwparam\\|raise\\|raises\\|except\\|exception\\|ivar\\|ivariable\\|cvar\\|cvariable\\|var\\|variable\\|type\\|group\\|todo\\|newfield\\)\\s-+\\([a-zA-Z_][a-zA-Z0-9_. ]*?\\)\\(:\\)")
 
 (defvar python-docstring-field-no-arg-re
-  "^\\s-*[@:]\\(raise\\|raises\\|return\\|returns\\|rtype\\|returntype\\|type\\|sort\\|see\\|seealso\\|note\\|attention\\|bug\\|warning\\|warn\\|version\\|todo\\|deprecated\\|since\\|status\\|change\\|changed\\|permission\\|requires\\|require\\|requirement\\|precondition\\|precond\\|postcondition\\|postcod\\|invariant\\|author\\|organization\\|org\\|copyright\\|(c)\\|license\\|contact\\|summary\\|params\\|param\\):")
+  "^\\s-*\\([@:]\\)\\(raise\\|raises\\|return\\|returns\\|rtype\\|returntype\\|type\\|sort\\|see\\|seealso\\|note\\|attention\\|bug\\|warning\\|warn\\|version\\|todo\\|deprecated\\|since\\|status\\|change\\|changed\\|permission\\|requires\\|require\\|requirement\\|precondition\\|precond\\|postcondition\\|postcod\\|invariant\\|author\\|organization\\|org\\|copyright\\|(c)\\|license\\|contact\\|summary\\|params\\|param\\)\\(:\\)")
 
 (defvar python-docstring-epytext-markup-link "[UL]{\\([^}]*?\\)\\(<.*?>\\|\\)?}")
 (defvar python-docstring-epytext-markup-style-code "C{\\(.*?\\)}")
@@ -106,37 +106,41 @@
 (defvar python-docstring-sphinx-markup-code "``\\(.+?\\)``")
 
 (defvar python-docstring-keywords
-  `((,docstring-field-with-arg-re 1 font-lock-type-face t)
-    (,docstring-field-with-arg-re 2 font-lock-variable-name-face t)
-    (,docstring-field-no-arg-re 1 font-lock-type-face t)
+  `((,python-docstring-field-with-arg-re 1 font-lock-keyword-face t)
+    (,python-docstring-field-with-arg-re 2 font-lock-type-face t)
+    (,python-docstring-field-with-arg-re 3 font-lock-variable-name-face t)
+    (,python-docstring-field-with-arg-re 4 font-lock-keyword-face t)
+    (,python-docstring-field-no-arg-re 1 font-lock-keyword-face t)
+    (,python-docstring-field-no-arg-re 2 font-lock-type-face t)
+    (,python-docstring-field-no-arg-re 3 font-lock-keyword-face t)
 
     ;; :foo:`bar`
-    (,docstring-sphinx-markup-link 1 font-lock-function-name-face t)
-    (,docstring-sphinx-markup-link 2 font-lock-constant-face t)
+    (,python-docstring-sphinx-markup-link 1 font-lock-function-name-face t)
+    (,python-docstring-sphinx-markup-link 2 font-lock-constant-face t)
     ;; ``bar``
-    (,docstring-sphinx-markup-code 0 font-lock-constant-face t)
+    (,python-docstring-sphinx-markup-code 0 font-lock-constant-face t)
     ;; inline markup - 1
-    (,docstring-sphinx-markup-code 1 '(bold italic) t)
+    (,python-docstring-sphinx-markup-code 1 '(bold italic) t)
 
     ;; L/U - 1
-    (,docstring-epytext-markup-link 0 font-lock-constant-face t)
+    (,python-docstring-epytext-markup-link 0 font-lock-constant-face t)
     ;; Inline Markup - 1
-    (,docstring-epytext-markup-link 1 font-lock-function-name-face t)
+    (,python-docstring-epytext-markup-link 1 font-lock-function-name-face t)
     ;; Link - 2
-    (,docstring-epytext-markup-link 2 font-lock-keyword-face t)
+    (,python-docstring-epytext-markup-link 2 font-lock-keyword-face t)
 
     ;; C/I/B - 0
-    (,docstring-epytext-markup-style-code 0 font-lock-constant-face t)
+    (,python-docstring-epytext-markup-style-code 0 font-lock-constant-face t)
     ;; inline markup - 1
-    (,docstring-epytext-markup-style-code 1 '(bold italic) t)
+    (,python-docstring-epytext-markup-style-code 1 '(bold italic) t)
     ;; C/I/B - 0
-    (,docstring-epytext-markup-style-bold 0 font-lock-constant-face t)
+    (,python-docstring-epytext-markup-style-bold 0 font-lock-constant-face t)
     ;; inline markup - 1
-    (,docstring-epytext-markup-style-bold 1 (quote bold) t)
+    (,python-docstring-epytext-markup-style-bold 1 (quote bold) t)
     ;; C/I/B - 0
-    (,docstring-epytext-markup-style-italic 0 font-lock-constant-face t)
+    (,python-docstring-epytext-markup-style-italic 0 font-lock-constant-face t)
     ;; inline markup - 1
-    (,docstring-epytext-markup-style-italic 1 (quote italic) t)))
+    (,python-docstring-epytext-markup-style-italic 1 (quote italic) t)))
 
 (define-minor-mode python-docstring-mode
   "Toggle python-docstring-mode.
