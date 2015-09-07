@@ -107,7 +107,7 @@
 
 (defvar python-docstring-keywords
   `((,docstring-field-with-arg-re 1 font-lock-type-face t)
-    (,docstring-field-with-arg-re 2 font-lock-function-name-face t)
+    (,docstring-field-with-arg-re 2 font-lock-variable-name-face t)
     (,docstring-field-no-arg-re 1 font-lock-type-face t)
 
     ;; :foo:`bar`
@@ -121,9 +121,9 @@
     ;; L/U - 1
     (,docstring-epytext-markup-link 0 font-lock-constant-face t)
     ;; Inline Markup - 1
-    (,docstring-epytext-markup-link 1 font-lock-variable-name-face t)
+    (,docstring-epytext-markup-link 1 font-lock-function-name-face t)
     ;; Link - 2
-    (,docstring-epytext-markup-link 2 font-lock-function-name-face t)
+    (,docstring-epytext-markup-link 2 font-lock-keyword-face t)
 
     ;; C/I/B - 0
     (,docstring-epytext-markup-style-code 0 font-lock-constant-face t)
