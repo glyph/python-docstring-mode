@@ -534,6 +534,7 @@ if __name__ == '__main__':
     parser.add_argument("--offset")
     parser.add_argument("--indent")
     parser.add_argument("--width")
+    parser.add_argument("--linewise", action='store_true')
     namespace = parser.parse_args(sys.argv[1:])
 
     from io import StringIO
@@ -541,6 +542,8 @@ if __name__ == '__main__':
     io = StringIO()
     indata = sys.stdin.read().decode("utf-8")
     inlines = indata.split("\n")
+    if namespace.linewise:
+        inlines.insert(0, "")
     initialBlank, indentCount = indentHeuristic(inlines, io)
     point = 0
     width = 79
@@ -564,5 +567,7 @@ if __name__ == '__main__':
         sys.stdout.write(" ")
 
     output = io.getvalue()
+    if namespace.linewise:
+        output = "\n".join(output.split("\n")[1:-1])
     sys.stdout.write(output.encode("utf-8"))
     sys.stdout.flush()
