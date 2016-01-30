@@ -73,7 +73,7 @@
                           (shell-command-on-region
                            string-start string-end
                            (format
-                            "python %s --offset %s --indent %s --width %s"
+                            "python2 %s --offset %s --indent %s --width %s"
                             (shell-quote-argument python-docstring-script)
                             orig-offset
                             indent-count
