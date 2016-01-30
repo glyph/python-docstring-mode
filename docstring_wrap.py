@@ -263,6 +263,7 @@ class FieldParagraph(RegularParagraph):
         if self.words[0].startswith(':'):
             accumulatedLength = 0
             for word in self.words:
+                word = self.pointTracker.peek(word)
                 # Add the length of the word
                 accumulatedLength += len(word)
                 # Add the following space
