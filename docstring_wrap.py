@@ -20,10 +20,7 @@ import argparse
 import sys
 import re
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 from uuid import uuid4
 
 
@@ -552,8 +549,6 @@ def main(argv, indata):
     parser.add_argument("--width", type = int, default = 79)
     parser.add_argument("--linewise", action='store_true')
     namespace = parser.parse_args()
-
-    from io import StringIO
 
     io = StringIO()
     inlines = indata.split("\n")
