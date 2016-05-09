@@ -16,12 +16,32 @@ for most Python projects.
 
 from __future__ import unicode_literals
 
+import argparse
+import sys
 import re
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 from uuid import uuid4
+
 
 __all__ = [
     "wrapPythonDocstring"
 ]
+
+
+if sys.version_info[0] <= 2:
+    makeID = lambda: unicode(uuid4())
+    fromStdin = lambda s: s.decode("utf-8")
+    toStdout = lambda s: s.encode("utf-8")
+    PY2 = True
+else:
+    makeID = lambda: str(uuid4())
+    fromStdin = lambda s: s
+    toStdout = lambda s: s
+    PY2 = False
 
 
 
@@ -44,7 +64,7 @@ def isAcronym(word):
     parenthetically (e.g. this one).
     """
     word = word.strip("(")
-    return ((len(word) > 2 and word[1::2] == '.' * (len(word) / 2)) or
+    return ((len(word) > 2 and word[1::2] == '.' * int(len(word) / 2)) or
             word in ["cf.", "viz."])
 
 
@@ -390,7 +410,7 @@ class PointTracker(object):
 
     def __init__(self, point):
         self.point = point
-        self.marker = "{" + unicode(uuid4()) + "}"
+        self.marker = "{" + makeID() + "}"
         self.outPoints = []
 
 
@@ -525,12 +545,7 @@ def sampleDocstring():
     """
 
 
-
-
-if __name__ == '__main__':
-    import sys
-    import argparse
-
+def main(argv, indata):
     parser = argparse.ArgumentParser()
     parser.add_argument("--offset", type = int)
     parser.add_argument("--indent", type = int)
@@ -541,7 +556,6 @@ if __name__ == '__main__':
     from io import StringIO
 
     io = StringIO()
-    indata = sys.stdin.read().decode("utf-8")
     inlines = indata.split("\n")
     if namespace.linewise:
         inlines.insert(0, "")
@@ -561,12 +575,25 @@ if __name__ == '__main__':
         point=point,
         initialBlank=initialBlank,
     )
+    prefix = StringIO()
     if namespace.offset is not None:
-        sys.stdout.write(repr(offset))
-        sys.stdout.write(" ")
+        prefix.write(repr(offset))
+        prefix.write(" ")
 
-    output = io.getvalue()
+    output = prefix.getvalue() + io.getvalue()
     if namespace.linewise:
         output = "\n".join(output.split("\n")[1:-1])
-    sys.stdout.write(output.encode("utf-8"))
+    return output
+
+
+if __name__ == '__main__':
+    sys.stdout.write(
+        toStdout(
+            main(
+                sys.argv,
+                fromStdin(sys.stdin.read()),
+            )
+        )
+    )
+
     sys.stdout.flush()
