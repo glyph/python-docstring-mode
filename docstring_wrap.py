@@ -263,6 +263,7 @@ class FieldParagraph(RegularParagraph):
         if self.words[0].startswith(':'):
             accumulatedLength = 0
             for word in self.words:
+                word = self.pointTracker.peek(word)
                 # Add the length of the word
                 accumulatedLength += len(word)
                 # Add the following space
@@ -531,11 +532,11 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--offset")
-    parser.add_argument("--indent")
-    parser.add_argument("--width")
+    parser.add_argument("--offset", type = int)
+    parser.add_argument("--indent", type = int)
+    parser.add_argument("--width", type = int, default = 79)
     parser.add_argument("--linewise", action='store_true')
-    namespace = parser.parse_args(sys.argv[1:])
+    namespace = parser.parse_args()
 
     from io import StringIO
 
@@ -546,14 +547,12 @@ if __name__ == '__main__':
         inlines.insert(0, "")
     initialBlank, indentCount = indentHeuristic(inlines, io)
     point = 0
-    width = 79
+    width = namespace.width
 
     if namespace.offset is not None:
-        point = int(namespace.offset)
+        point = namespace.offset
     if namespace.indent is not None:
-        indentCount = int(namespace.indent)
-    if namespace.width is not None:
-        width = int(namespace.width)
+        indentCount = namespace.indent
 
     offset = wrapPythonDocstring(
         indata, io,
