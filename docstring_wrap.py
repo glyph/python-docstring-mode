@@ -577,7 +577,7 @@ def main(argv, indata):
     )
     prefix = StringIO()
     if namespace.offset is not None:
-        prefix.write(repr(offset))
+        prefix.write("{:d}".format(offset))
         prefix.write(" ")
 
     output = prefix.getvalue() + io.getvalue()
