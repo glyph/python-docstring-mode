@@ -78,6 +78,18 @@ class FunctionalTests(unittest.TestCase):
             main(["test"], ds)
         )
 
+    def test_single_space_used_when_specified(self):
+        """
+        When called with --single-space, only a single space is inserted at
+        the end of sentences.
+        """
+        ds = """
+        Sentence number one. Sentence number two.
+        """
+        self.assertEqual(
+            ds,
+            main(["test", "--single-space"], ds))
+
 
 if __name__ == '__main__':
     unittest.main()

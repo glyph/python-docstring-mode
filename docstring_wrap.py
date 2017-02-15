@@ -195,7 +195,7 @@ class RegularParagraph(object):
         return self
 
 
-    def wrap(self, output, indentation, width, initialBlank):
+    def wrap(self, output, indentation, width, initialBlank, singleSpace):
         maxWidthThisLine = width
         if not self.words:
             return
@@ -213,7 +213,7 @@ class RegularParagraph(object):
             normalPrevWord = self.pointTracker.peek(prevWord)
             if num == 1 and startslist(normalPrevWord):
                 spaces = 1
-            elif isSentenceEnd(normalPrevWord):
+            elif isSentenceEnd(normalPrevWord) and singleSpace:
                 spaces = 2
             else:
                 spaces = 1
@@ -389,7 +389,7 @@ class PreFormattedParagraph(object):
         self.lines = newLines
 
 
-    def wrap(self, output, indentation, width, initialBlank):
+    def wrap(self, output, indentation, width, initialBlank, singleSpace):
         # OK, now we know about all the lines we're going to know about.
         self.fixIndentation()
         for line in self.lines:
@@ -470,7 +470,8 @@ class PointTracker(object):
 
 
 def wrapPythonDocstring(docstring, output, indentation="    ",
-                        width=79, point=0, initialBlank=True):
+                        width=79, point=0, initialBlank=True,
+                        singleSpace=False):
     """
     Wrap a given Python docstring.
 
@@ -494,6 +495,9 @@ def wrapPythonDocstring(docstring, output, indentation="    ",
         return value of this function) to reposition the cursor at the relative
         position which the user will expect.
 
+    @param singleSpace: If true, use a single space between sentences instead
+        of two.
+
     @return: The new location of the cursor.
     """
     # TODO: multiple points; usable, for example, for start and end of a
@@ -510,7 +514,7 @@ def wrapPythonDocstring(docstring, output, indentation="    ",
             if not paragraph.matchesTag(prevp):
                 output.write("\n")
         prevp = paragraph
-        paragraph.wrap(output, indentation, width, initialBlank)
+        paragraph.wrap(output, indentation, width, initialBlank, singleSpace)
         initialBlank = True
     output.write(indentation)
     return pt.outPoints[0]
@@ -548,7 +552,8 @@ def main(argv, indata):
     parser.add_argument("--indent", type = int)
     parser.add_argument("--width", type = int, default = 79)
     parser.add_argument("--linewise", action='store_true')
-    namespace = parser.parse_args()
+    parser.add_argument("--single-space", action='store_false')
+    namespace = parser.parse_args(argv[1:])
 
     io = StringIO()
     inlines = indata.split("\n")
@@ -569,6 +574,7 @@ def main(argv, indata):
         width=width,
         point=point,
         initialBlank=initialBlank,
+        singleSpace=namespace.single_space
     )
     prefix = StringIO()
     if namespace.offset is not None:
