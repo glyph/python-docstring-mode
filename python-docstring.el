@@ -31,6 +31,14 @@
 
 ;;; Code:
 
+(defcustom python-docstring-sentence-end-double-space t
+  "If non-nil, use double spaces when formatting text.
+
+Operates simililarly to `sentence-end-double-space'.  When nil, a
+single space is used."
+  :type 'boolean
+  :group 'python-docstring)
+
 (defvar python-docstring-script
   (concat (if load-file-name
               (file-name-directory load-file-name)
@@ -76,7 +84,7 @@
                            string-start string-end
                            (format
                             (concat "python2 %s --offset %s --indent %s --width %s"
-				    (unless sentence-end-double-space
+				    (unless python-docstring-sentence-end-double-space
 				      " --single-space"))
                             (shell-quote-argument python-docstring-script)
                             orig-offset
