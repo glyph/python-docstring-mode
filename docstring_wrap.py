@@ -105,13 +105,17 @@ class RegularParagraph(object):
     otherIndent = ""
 
     def __init__(self, pointTracker, fixedIndent="", hangIndent="",
-                 followIndent=""):
+                 followIndent="", originalIndent=0):
         self.words = []
         self.fixedIndent = fixedIndent
         self.hangIndent = hangIndent
         self.followIndent = followIndent
         self.more = None
+        self.prev = None
         self.pointTracker = pointTracker
+        # originalIndent is the width of the indentation of the line this
+        # paragraph originally came from in the input text.
+        self.originalIndent = originalIndent
         self._unwrappedLines = 0
         self._headingType = None
         self._headingPoints = []
@@ -140,25 +144,54 @@ class RegularParagraph(object):
     def isHeading(self):
         return bool(self._headingType)
 
+    def connect(self, more):
+        self.more = more
+        more.prev = self
+        return more
+
+    def islist(self):
+        return self.words and startslist(self.words[0])
+
+    def previousListPeer(self):
+        """
+        Find a previous paragraph that is also a list element, of the same
+        indentation level if one exists.
+        """
+        previous = self.prev
+        matched = None
+        while previous:
+            if not previous.words:
+                previous = previous.prev
+                continue
+            if not previous.islist():
+                break
+            if previous.originalIndent <= self.originalIndent:
+                return previous
+            if previous.originalIndent > self.originalIndent:
+                matched = previous
+            previous = previous.prev
+        if matched:
+            return matched
 
     def add(self, line):
         clean = self.pointTracker.peek(line)
         stripped = clean.strip()
+        thisLineIndent = len(clean) - len(clean.lstrip())
 
         if stripped:
             self._unwrappedLines += 1
             active = self
             firstword = list(self.pointTracker.filterWords(line.split()))[0]
             if beginsField(stripped):
-                fp = FieldParagraph(pointTracker=self.pointTracker)
+                fp = FieldParagraph(pointTracker=self.pointTracker, originalIndent=thisLineIndent)
                 fp.words.extend(line.split())
-                active = self.more = fp
+                active = active.connect(fp)
             elif isUnderline(stripped) and self._unwrappedLines == 2:
                 # This paragraph is actually a section heading.
                 active.setIsHeading(stripped[0])
                 self._headingPoints = self.pointTracker.extractPoints(line)
                 # FIXME: should respect leading indentation.
-                active = self.nextRegular()
+                active = active.connect(self.genRegular(originalIndent=thisLineIndent))
             elif startslist(firstword):
                 # Aesthetically I prefer a 2-space indent here, but the
                 # convention in the codebase seems to be 4 spaces.
@@ -174,24 +207,31 @@ class RegularParagraph(object):
                     fixedIndent=fi,
                     hangIndent=" " * hangIndent,
                     followIndent=self.followIndent,
+                    originalIndent=thisLineIndent,
                 )
                 fp.words.extend(line.split())
-                active = self.more = fp
+                fp.prev = self
+                peer = fp.previousListPeer()
+                if peer:
+                    if peer.originalIndent >= fp.originalIndent:
+                        fp.fixedIndent = peer.fixedIndent
+                    else:
+                        fp.fixedIndent = peer.fixedIndent + (" " * LIST_INDENT)
+                active = active.connect(fp)
             else:
                 self.words.extend(line.split())
             if stripped.endswith("::"):
-                active.more = PreFormattedParagraph(
+                active = active.connect(PreFormattedParagraph(
                     active,
-                    indentBegins=len(clean) - len(clean.lstrip())
-                )
-                active = active.more
+                    indentBegins=thisLineIndent
+                ))
             return active
         else:
             rawstrip = line.strip()
             if rawstrip:
                 self.words.append(rawstrip)
             if len(list(self.pointTracker.filterWords(self.words))):
-                return self.nextRegular()
+                return self.connect(self.genRegular(originalIndent=thisLineIndent))
         return self
 
 
@@ -253,15 +293,11 @@ class RegularParagraph(object):
                 self.otherIndent)
 
 
-    def genRegular(self):
+    def genRegular(self, originalIndent=0):
         return RegularParagraph(pointTracker=self.pointTracker,
                                 fixedIndent=self.nextIndent(),
-                                followIndent=self.nextIndent())
-
-
-    def nextRegular(self):
-        self.more = self.genRegular()
-        return self.more
+                                followIndent=self.nextIndent(),
+                                originalIndent=originalIndent)
 
 
     def nextIndent(self):
@@ -345,7 +381,35 @@ class PreFormattedParagraph(object):
         self.indentBegins = indentBegins
         self.fixedIndent = fixedIndent
         self.more = None
+        self.prev = None
         self.pointTracker = pointTracker
+
+
+    def islist(self):
+        """
+        It's not a list.
+        """
+        return False
+
+
+    def connect(self, more):
+        self.more = more
+        more.prev = self
+        return more
+
+
+    @property
+    def originalIndent(self):
+        return self.indentBegins
+
+
+    @property
+    def words(self):
+        """
+        Used by wrapper below to see if there are any words in a given
+        paragraph and whether it should be skipped.
+        """
+        return bool(self.lines)
 
 
     def matchesTag(self, other):
@@ -357,7 +421,7 @@ class PreFormattedParagraph(object):
 
         if actualLine.strip():
             if len(actualLine) - len(actualLine.lstrip()) <= self.indentBegins:
-                next = self.more = self.before.genRegular()
+                next = self.connect(self.before.genRegular())
                 return next.add(line)
             self.lines.append(line.rstrip())
         else:
@@ -372,9 +436,9 @@ class PreFormattedParagraph(object):
             self.lines.pop()
         if not self.lines:
             return
-        cleanLines = map(self.pointTracker.peek, self.lines)
+        cleanLines = list(map(self.pointTracker.peek, self.lines))
         commonLeadingIndent = min([len(x) - len(x.lstrip()) for x in cleanLines
-                                   if x.strip()])
+                                   if x.strip()] or [0])
         newLines = []
         for actualLine, line in zip(cleanLines, self.lines):
             if actualLine != line and line[:commonLeadingIndent].strip():
@@ -511,13 +575,13 @@ def wrapPythonDocstring(docstring, output, indentation="    ",
     # output.write("{}".format(initialBlank))
     for paragraph in start.all():
         if initialBlank:
-            if not paragraph.matchesTag(prevp):
+            if paragraph.words and not paragraph.matchesTag(prevp):
                 output.write("\n")
         prevp = paragraph
         paragraph.wrap(output, indentation, width, initialBlank, singleSpace)
         initialBlank = True
     output.write(indentation)
-    return pt.outPoints[0]
+    return pt.outPoints[0] if pt.outPoints else 0
 
 
 

@@ -83,7 +83,7 @@ single space is used."
                           (shell-command-on-region
                            string-start string-end
                            (format
-                            (concat "python2 %s --offset %s --indent %s --width %s"
+                            (concat "python3 %s --offset %s --indent %s --width %s"
 				    (unless python-docstring-sentence-end-double-space
 				      " --single-space"))
                             (shell-quote-argument python-docstring-script)
