@@ -31,7 +31,7 @@
 
 ;;; Code:
 
-(defcustom python-docstring-sentence-end-double-space t
+(defcustom python-docstring-sentence-end-double-space sentence-end-double-space
   "If non-nil, use double spaces when formatting text.
 
 Operates simililarly to `sentence-end-double-space'.  When nil, a
