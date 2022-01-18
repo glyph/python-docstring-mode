@@ -61,7 +61,7 @@ single space is used."
                                       (setf fill-it-anyway t)
                                       (throw 'not-a-string nil))))
                        (string-start (+ (goto-char (nth 8 syx))
-                                        3))
+                                        1))
                        (rawchar (if (eql (char-before (point)) ?r)
                                     1
                                   0))
@@ -75,7 +75,7 @@ single space is used."
                                (progn (forward-sexp)
                                       (point))
                              (error (point-max)))
-                           3))
+                           1))
                        (orig-offset (- orig-point string-start)))
                   (let*
                       ((offset-within
