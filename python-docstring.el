@@ -31,6 +31,8 @@
 
 ;;; Code:
 
+(require 'syntax)
+
 (defcustom python-docstring-sentence-end-double-space t
   "If non-nil, use double spaces when formatting text.
 
