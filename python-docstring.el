@@ -58,17 +58,22 @@ single space is used."
               (save-excursion
                 (let* ((orig-point (point))
                        (syx (syntax-ppss))
-                       (in-string (if (nth 3 syx) t
+                       (in-string (if (eq (syntax-ppss-context syx) 'string) t
                                     (progn
                                       (setf fill-it-anyway t)
                                       (throw 'not-a-string nil))))
-                       (string-start (+ (goto-char (nth 8 syx))
-                                        3))
-                       (rawchar (if (eql (char-before (point)) ?r)
+                       (syntax-element-start (nth 8 syx))
+                       (string-start
+                        (+ (goto-char (+ syntax-element-start
+                                         (if (eq (char-before syntax-element-start) ?\")
+                                             -2 0
+                                             )))
+                           3))
+                       (is-raw-python-string (if (eq (char-before string-start) ?r)
                                     1
                                   0))
                        ;; at the beginning of the screen here
-                       (indent-count (- (- string-start (+ rawchar 3))
+                       (indent-count (- (- string-start (+ is-raw-python-string 3))
                                         (save-excursion
                                           (beginning-of-line)
                                           (point))))
