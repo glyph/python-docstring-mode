@@ -643,11 +643,16 @@ def main(argv, indata):
     prefix = StringIO()
     if namespace.offset is not None:
         prefix.write("{:d}".format(offset))
-        prefix.write(" ")
+        if namespace.linewise:
+            prefix.write("\n")
+        else:
+            prefix.write(" ")
 
-    output = prefix.getvalue() + io.getvalue()
+
+    output = io.getvalue()
     if namespace.linewise:
         output = "\n".join(output.split("\n")[1:-1])
+    output = prefix.getvalue() + output
     return output
 
 
