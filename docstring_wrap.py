@@ -78,6 +78,9 @@ def isSentenceEnd(prevWord):
     # Now, if it's not a period, it's probably not the end of a sentence.
     if prevWord[-1] != ".":
         return False
+    # Don't insert sentence-end breaks into sphinx markup things.
+    if prevWord == '..':
+        return False
     if isAcronym(prevWord):
         return False
     return True
@@ -220,7 +223,7 @@ class RegularParagraph(object):
                 active = active.connect(fp)
             else:
                 self.words.extend(line.split())
-            if stripped.endswith("::"):
+            if stripped.endswith("::") or (".. code-block:: " in stripped):
                 active = active.connect(PreFormattedParagraph(
                     active,
                     indentBegins=thisLineIndent
