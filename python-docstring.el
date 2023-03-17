@@ -58,37 +58,43 @@ single space is used."
               (save-excursion
                 (let* ((orig-point (point))
                        (syx (syntax-ppss))
-                       (in-string (if (eq (syntax-ppss-context syx) 'string) t
+                       (in-string (if (eq (syntax-ppss-context syx) 'string)
+                                      t
                                     (progn
                                       (setf fill-it-anyway t)
                                       (throw 'not-a-string nil))))
-                       (syntax-element-start (nth 8 syx))
-                       (string-start
-                        (+ (goto-char (+ syntax-element-start
-                                         (if (eq (char-before syntax-element-start) ?\")
-                                             -2 0
-                                             )))
-                           3))
-                       (is-raw-python-string (if (eq (char-before string-start) ?r)
-                                    1
-                                  0))
-                       ;; at the beginning of the screen here
-                       (indent-count (- (- string-start (+ is-raw-python-string 3))
-                                        (save-excursion
-                                          (beginning-of-line)
-                                          (point))))
-                       (string-end
-                        (- (condition-case ()        ; for unbalanced quotes
+                       (inside-string-start ;; The syntax tree starts the
+                                            ;; string syntax element after the
+                                            ;; opening quote completes.
+                        (goto-char (+ 1 (nth 8 syx))))
+                       (outside-string-start ;; Scan backwards looking for
+                                             ;; fstrings, raw strings, and all
+                                             ;; the quotes that make up the
+                                             ;; beginning of the string, and
+                                             ;; find the start of it
+                        (if (looking-back
+                             "\\(f\\|r\\|rf\\|fr\\|u\\|\\)\"\"\"" nil t)
+                            (goto-char (match-beginning 0))
+                          (throw 'not-actually-a-string "oops")))
+                       (indent-count    ;; figure out the indentation to the
+                                        ;; beginning of the string literal (not
+                                        ;; literal whitespace, as we may be
+                                        ;; inside an expression)
+                        (- outside-string-start
+                           (save-excursion (beginning-of-line)
+                                           (point))))
+                       (string-end      ;; 
+                        (- (condition-case ()
                                (progn (forward-sexp)
                                       (point))
                              (error (point-max)))
                            3))
-                       (orig-offset (- orig-point string-start)))
+                       (orig-offset (- orig-point inside-string-start)))
                   (let*
                       ((offset-within
                         (progn
                           (shell-command-on-region
-                           string-start string-end
+                           inside-string-start string-end
                            (format
                             (concat "python3 %s --offset %s --indent %s --width %s"
 				    (unless python-docstring-sentence-end-double-space
@@ -98,14 +104,23 @@ single space is used."
                             indent-count
                             fill-column
                             )
-                           :replace t)
-                          (goto-char string-start)
+                           :replace            ; output-buffer
+                           t            ; replace
+                           "*python-docstring-fill errors*" ; error-buffer
+                           )
+                          (goto-char inside-string-start)
                           (forward-sexp)
                           (string-to-number
-                           (buffer-substring-no-properties string-start orig-point))
+                           (buffer-substring-no-properties inside-string-start (point)))
                           )))
-                    (delete-region string-start (+ 1 (point)))
-                    offset-within)))))
+                    (delete-region inside-string-start (+ 1 (point)))
+
+                    ;; it all comes down to this: we give back the offset from
+                    ;; the start of the string that we're going to move
+                    ;; forward.
+                    offset-within
+                    )))
+              ))
         (forward-char to-forward)))
     (if fill-it-anyway
         (call-interactively 'fill-paragraph))))
