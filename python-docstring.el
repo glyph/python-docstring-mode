@@ -32,6 +32,7 @@
 ;;; Code:
 
 (require 'syntax)
+(require 'treesit nil t)                ;optional dependency
 
 (defcustom python-docstring-sentence-end-double-space t
   "If non-nil, use double spaces when formatting text.
@@ -48,82 +49,123 @@ single space is used."
           "docstring_wrap.py")
   "The location of the docstring_wrap.py script.")
 
+(defun python-docstring-bounds-with-ppss ()
+  "Bounds the docstring by using parse-partial-sexp-state."
+  (let* ((partial-sexp (syntax-ppss))
+
+         (in-string (if (eq (syntax-ppss-context partial-sexp) 'string)
+                        t
+                      (progn (throw 'not-a-string 'not-a-string))))
+
+         (string-start
+          ;; The syntax tree starts the string syntax element on the final
+          ;; opening quote. Move forward one character.
+          (goto-char (+ 1 (nth 8 partial-sexp))))
+
+         (string-end
+          ;; We're looking at the beginning of the string. Back up by 3
+          (condition-case ()
+              (- (progn (backward-char 3)
+                        (forward-sexp)
+                        (point))
+                 3)
+            (error (point-max)))))
+    (list string-start string-end)))
+
+(defun python-docstring-bounds-with-tree-sitter ()
+  "Bounds the docstring by using tree-sitter.
+
+Return and throw the same values as
+`python-docstring-bounds-with-ppss'."
+
+  (if (not (fboundp 'treesit-node-at))
+      (error "In tree-sitter mode but tree-sitter is not loaded somehow"))
+  (let* ((the-node (treesit-node-at (point)))
+         (in-string (if (string-equal (treesit-node-type the-node) "string_content")
+                        t
+                      (progn (throw 'not-a-string 'not-a-string))))
+         (string-start (treesit-node-start the-node))
+         (string-end (treesit-node-end the-node)))
+    (list string-start
+          string-end)))
+
+(defun python-docstring-run-script (string-start string-end orig-offset indent-count)
+  "Run the script.
+
+`STRING-START': the beginning of the docstring.
+`STRING-END': the end of the docstring.
+`ORIG-OFFSET': The original offset, in characters, of the user's cursor within
+the string.
+`INDENT-COUNT': the horizontal position of the opening quote on the first line
+of the string."
+  (shell-command-on-region
+   string-start string-end
+   (format
+    (concat "python3 %s --offset %s --indent %s --width %s"
+	    (unless python-docstring-sentence-end-double-space
+	      " --single-space"))
+    (shell-quote-argument python-docstring-script)
+    orig-offset
+    indent-count
+    fill-column
+    )
+   :replace            ; output-buffer
+   t            ; replace
+   "*python-docstring-fill errors*" ; error-buffer
+   )
+  (goto-char string-start)
+  (forward-sexp)
+  (let ((offset-result
+         (string-to-number
+          (buffer-substring-no-properties string-start (point)))))
+    ;; the script comes back with our offset as a decimal number at the start
+    ;; of the output, clear that out of the buffer before we return.
+    (delete-region string-start (+ 1 (point)))
+    offset-result))
+
+(defun python-docstring-figure-out-indentation ()
+  "Determine the horizontal space before the start of the string literal.
+
+Not literal whitespace / indentation -- as the string may itself
+be inside an expression -- but rather horizontal position within
+the line, the place that the filled whitespace should align with."
+
+  (save-excursion
+    (- (if (looking-back
+            "\\(f\\|r\\|rf\\|fr\\|u\\|\\)\"\"\"" nil t)
+           (goto-char (match-beginning 0))
+         (throw 'not-a-string 'not-a-string))
+       (progn (beginning-of-line)
+              (point)))))
+
+(defun python-docstring-calc-move ()
+  "Wrap the docstring and determine relative cursor position.
+
+Return the number of characters to move forward to retain the
+same offset within the string."
+  (save-excursion
+    (let* ((orig-point (point))
+           (bounds-result (if (eq major-mode 'python-ts-mode)
+                              (python-docstring-bounds-with-tree-sitter)
+                            (python-docstring-bounds-with-ppss)))
+           (string-start (goto-char (car bounds-result)))
+           (string-end (cadr bounds-result)))
+
+      (python-docstring-run-script
+       string-start string-end
+       (- orig-point string-start)
+       (python-docstring-figure-out-indentation)))))
+
 ;;;###autoload
 (defun python-docstring-fill ()
   "Wrap Python docstrings as epytext or ReStructured Text."
   (interactive)
-  (let ((fill-it-anyway nil))
-    (catch 'not-a-string
-      (let* ((to-forward
-              (save-excursion
-                (let* ((orig-point (point))
-                       (syx (syntax-ppss))
-                       (in-string (if (eq (syntax-ppss-context syx) 'string)
-                                      t
-                                    (progn
-                                      (setf fill-it-anyway t)
-                                      (throw 'not-a-string nil))))
-                       (inside-string-start ;; The syntax tree starts the
-                                            ;; string syntax element after the
-                                            ;; opening quote completes.
-                        (goto-char (+ 1 (nth 8 syx))))
-                       (outside-string-start ;; Scan backwards looking for
-                                             ;; fstrings, raw strings, and all
-                                             ;; the quotes that make up the
-                                             ;; beginning of the string, and
-                                             ;; find the start of it
-                        (if (looking-back
-                             "\\(f\\|r\\|rf\\|fr\\|u\\|\\)\"\"\"" nil t)
-                            (goto-char (match-beginning 0))
-                          (throw 'not-actually-a-string "oops")))
-                       (indent-count    ;; figure out the indentation to the
-                                        ;; beginning of the string literal (not
-                                        ;; literal whitespace, as we may be
-                                        ;; inside an expression)
-                        (- outside-string-start
-                           (save-excursion (beginning-of-line)
-                                           (point))))
-                       (string-end      ;; 
-                        (- (condition-case ()
-                               (progn (forward-sexp)
-                                      (point))
-                             (error (point-max)))
-                           3))
-                       (orig-offset (- orig-point inside-string-start)))
-                  (let*
-                      ((offset-within
-                        (progn
-                          (shell-command-on-region
-                           inside-string-start string-end
-                           (format
-                            (concat "python3 %s --offset %s --indent %s --width %s"
-				    (unless python-docstring-sentence-end-double-space
-				      " --single-space"))
-                            (shell-quote-argument python-docstring-script)
-                            orig-offset
-                            indent-count
-                            fill-column
-                            )
-                           :replace            ; output-buffer
-                           t            ; replace
-                           "*python-docstring-fill errors*" ; error-buffer
-                           )
-                          (goto-char inside-string-start)
-                          (forward-sexp)
-                          (string-to-number
-                           (buffer-substring-no-properties inside-string-start (point)))
-                          )))
-                    (delete-region inside-string-start (+ 1 (point)))
-
-                    ;; it all comes down to this: we give back the offset from
-                    ;; the start of the string that we're going to move
-                    ;; forward.
-                    offset-within
-                    )))
-              ))
-        (forward-char to-forward)))
-    (if fill-it-anyway
-        (call-interactively 'fill-paragraph))))
+  (if (eq (catch 'not-a-string
+            (let* ((to-forward (python-docstring-calc-move)))
+              (forward-char to-forward)
+              nil))
+          'not-a-string)
+      (call-interactively 'fill-paragraph)))
 
 (defvar python-docstring-field-with-arg-re
   "^\\s-*\\([@:]\\)\\(param\\|parameter\\|arg\\|argument\\|type\\|keyword\\|kwarg\\|kwparam\\|raise\\|raises\\|except\\|exception\\|ivar\\|ivariable\\|cvar\\|cvariable\\|var\\|variable\\|type\\|group\\|todo\\|newfield\\)\\s-+\\(~*[a-zA-Z_][a-zA-Z0-9_,. ]*?\\)\\(:\\)")
@@ -184,11 +226,11 @@ With no argument, this command toggles the mode.
 Non-null prefix argument turns on the mode.
 Null prefix argument turns off the mode."
  ;; The initial value.
- nil
+ :init-value nil
  ;; The indicator for the mode line.
- " DS"
+ :lighter " DS"
  ;; The minor mode bindings.
- `(([(meta q)] . python-docstring-fill))
+ :keymap `(([(meta q)] . python-docstring-fill))
  ;; &rest BODY
  (if python-docstring-mode
      (font-lock-add-keywords nil python-docstring-keywords)
