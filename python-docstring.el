@@ -32,6 +32,7 @@
 ;;; Code:
 
 (require 'syntax)
+(require 'python)
 (require 'treesit nil t)                ;optional dependency
 
 (defcustom python-docstring-sentence-end-double-space t
@@ -66,7 +67,7 @@ single space is used."
           ;; We're looking at the beginning of the string. Back up by 3
           (condition-case ()
               (- (progn (backward-char 3)
-                        (forward-sexp)
+                        (python-nav-forward-sexp)
                         (point))
                  3)
             (error (point-max)))))
@@ -114,7 +115,7 @@ of the string."
    "*python-docstring-fill errors*" ; error-buffer
    )
   (goto-char string-start)
-  (forward-sexp)
+  (forward-word)
   (let ((offset-result
          (string-to-number
           (buffer-substring-no-properties string-start (point)))))
