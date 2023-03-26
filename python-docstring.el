@@ -65,12 +65,20 @@ single space is used."
 
          (string-end
           ;; We're looking at the beginning of the string. Back up by 3
-          (condition-case ()
-              (- (progn (backward-char 3)
-                        (python-nav-forward-sexp)
-                        (point))
-                 3)
-            (error (point-max)))))
+          (- (let ((one-hop (progn (backward-char 3)
+                                   (python-nav-forward-sexp)
+                                   (point))))
+               (if (equal one-hop (- string-start 2))
+                   ;; python-nav-forward-sexp inside an expression (sometimes?)
+                   ;; treats the first two quotes of a triple-quoted string as
+                   ;; a string in its own right. We need to jump forward one
+                   ;; more expression to get to the end of the string.
+                   (progn (python-nav-forward-sexp)
+                          (python-nav-forward-sexp)
+                          (point))
+                 one-hop))
+             3)
+          ))
     (list string-start string-end)))
 
 (defun python-docstring-bounds-with-tree-sitter ()
