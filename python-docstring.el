@@ -110,9 +110,10 @@ of the string."
   (shell-command-on-region
    string-start string-end
    (format
-    (concat "python3 %s --offset %s --indent %s --width %s"
+    (concat "%s %s --offset %s --indent %s --width %s"
 	    (unless python-docstring-sentence-end-double-space
 	      " --single-space"))
+    (if (eq system-type 'windows-nt) "py -3" "python3")
     (shell-quote-argument python-docstring-script)
     orig-offset
     indent-count
