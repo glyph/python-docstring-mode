@@ -1,6 +1,6 @@
 ;;; python-docstring.el --- Smart Python docstring formatting
 
-;; Copyright (c) 2014-2015 The Authors
+;; Copyright (c) 2014-2023 The Authors
 ;;
 ;; Permission is hereby granted, free of charge, to any person obtaining
 ;; a copy of this software and associated documentation files (the
@@ -61,23 +61,12 @@ single space is used."
          (string-start
           ;; The syntax tree starts the string syntax element on the final
           ;; opening quote. Move forward one character.
-          (goto-char (+ 1 (nth 8 partial-sexp))))
+          (+ 1 (goto-char (nth 8 partial-sexp))))
 
          (string-end
           ;; We're looking at the beginning of the string. Back up by 3
-          (- (let ((one-hop (progn (backward-char 3)
-                                   (python-nav-forward-sexp)
-                                   (point))))
-               (if (equal one-hop (- string-start 2))
-                   ;; python-nav-forward-sexp inside an expression (sometimes?)
-                   ;; treats the first two quotes of a triple-quoted string as
-                   ;; a string in its own right. We need to jump forward one
-                   ;; more expression to get to the end of the string.
-                   (progn (python-nav-forward-sexp)
-                          (python-nav-forward-sexp)
-                          (point))
-                 one-hop))
-             3)
+          (progn (python-nav-forward-sexp)
+                 (- (point) 1))
           ))
     (list string-start string-end)))
 
